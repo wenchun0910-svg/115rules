@@ -207,7 +207,14 @@
         document.getElementById('currentYear').textContent = new Date().getFullYear();
 
         // Firebase 設置
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+      const firebaseConfig = {
+  apiKey: "AIzaSyAmFsYszaIDv2YnJNOi0oOf0rzqEE2yx5s",
+  authDomain: "rules-2b444.firebaseapp.com",
+  projectId: "rules-2b444",
+  storageBucket: "rules-2b444.firebasestorage.app",
+  messagingSenderId: "399429207355",
+  appId: "1:399429207355:web:7cbbc07d8186780553631e"
+};
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-class-app';
 
         const app = initializeApp(firebaseConfig);
