@@ -91,6 +91,21 @@
     <!-- 主要內容區 -->
     <main class="flex-grow max-w-5xl mx-auto w-full p-3 sm:p-6 flex flex-col gap-4 sm:gap-6">
         
+        <!-- 常見扣分代碼參考卡片 -->
+        <div class="bg-white p-4 sm:p-5 rounded-sm shadow-sm border border-[#D5CFC4] relative overflow-hidden">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#CB997E]"></div>
+            <div class="pl-2 sm:pl-3 text-[#3E3A39]">
+                <h2 class="font-serif-tc font-bold text-base sm:text-lg mb-3 text-[#6B705C]">📝 常見扣分代碼參考</h2>
+                <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
+                    <span class="bg-[#F9F8F6] px-2 py-1.5 rounded-sm border border-[#D5CFC4] shadow-sm text-[#3E3A39]"><strong>h</strong> : 作業未交/未帶</span>
+                    <span class="bg-[#F9F8F6] px-2 py-1.5 rounded-sm border border-[#D5CFC4] shadow-sm text-[#3E3A39]"><strong>c</strong> : 遲到</span>
+                    <span class="bg-[#F9F8F6] px-2 py-1.5 rounded-sm border border-[#D5CFC4] shadow-sm text-[#3E3A39]"><strong>d</strong> : 打掃不認真</span>
+                    <span class="bg-[#F9F8F6] px-2 py-1.5 rounded-sm border border-[#D5CFC4] shadow-sm text-[#3E3A39]"><strong>p</strong> : 午休/課堂秩序</span>
+                    <span class="bg-[#F9F8F6] px-2 py-1.5 rounded-sm border border-[#D5CFC4] shadow-sm text-[#3E3A39]"><strong>a</strong> : 升旗/早自修違規</span>
+                </div>
+            </div>
+        </div>
+
         <!-- 載入動畫 -->
         <div id="loader" class="flex-grow flex flex-col items-center justify-center py-20 text-[#6B705C]">
             <i class="fas fa-circle-notch fa-spin text-4xl mb-4"></i>
@@ -203,7 +218,7 @@
         document.getElementById('currentYear').textContent = new Date().getFullYear();
 
         // Firebase 設置
-        const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyAmFsYszaIDv2YnJNOi0oOf0rzqEE2yx5s",
   authDomain: "rules-2b444.firebaseapp.com",
   projectId: "rules-2b444",
@@ -395,7 +410,7 @@
             title.innerHTML = '<i class="fas fa-exclamation-triangle text-[#9E2A2B]"></i> 扣分狀況說明';
             container.appendChild(title);
 
-            // 【重點修改】僅過濾出匯入資料中「備註」欄位有內容的學生
+            // 僅過濾出匯入資料中「備註」欄位有內容的學生
             const studentsWithRemarks = dataArray.filter(row => 
                 (row.remark && row.remark.trim() !== '')
             );
