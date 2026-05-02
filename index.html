@@ -91,18 +91,6 @@
     <!-- 主要內容區 -->
     <main class="flex-grow max-w-5xl mx-auto w-full p-3 sm:p-6 flex flex-col gap-4 sm:gap-6">
         
-        <!-- 提示卡片 -->
-        <div class="bg-white p-4 sm:p-6 rounded-sm shadow-sm border border-[#D5CFC4] relative overflow-hidden">
-            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#A5A58D]"></div>
-            <div class="pl-3 text-[#3E3A39]">
-                <h2 class="font-serif-tc font-bold text-base sm:text-lg mb-2 text-[#6B705C]">📝 評分基準</h2>
-                <p class="text-xs sm:text-sm leading-relaxed text-gray-600">
-                    基本分 <span class="font-bold text-[#3E3A39]">80</span> 分。優良表現加 <span class="font-bold text-[#6B705C]">1</span> 分，違規扣 <span class="font-bold text-[#9E2A2B]">1</span> 分。<br>
-                    ※ <span class="text-[#9E2A2B] font-bold">總分未達 70 分者，需擔任值日生一次。</span>
-                </p>
-            </div>
-        </div>
-
         <!-- 載入動畫 -->
         <div id="loader" class="flex-grow flex flex-col items-center justify-center py-20 text-[#6B705C]">
             <i class="fas fa-circle-notch fa-spin text-4xl mb-4"></i>
@@ -110,7 +98,7 @@
         </div>
 
         <!-- 極簡資料表格 (增強響應式滑動) -->
-        <div id="tableContainer" class="bg-white rounded-sm shadow-sm border border-[#D5CFC4] overflow-hidden hidden flex-grow relative">
+        <div id="tableContainer" class="bg-white rounded-sm shadow-sm border border-[#D5CFC4] overflow-hidden hidden flex-grow relative mt-2">
             <div class="overflow-x-auto w-full h-full pb-2">
                 <table class="min-w-full text-left border-collapse">
                     <thead id="tableHead" class="bg-[#F9F8F6] text-[#6B705C] border-b-2 border-[#D5CFC4] font-serif-tc tracking-wide">
@@ -118,7 +106,7 @@
                             <th class="py-3 sm:py-4 px-3 sm:px-4 text-center w-16 sm:w-20 whitespace-nowrap text-sm sm:text-base">座號</th>
                             <th class="py-3 sm:py-4 px-3 sm:px-4 w-24 sm:w-32 whitespace-nowrap text-sm sm:text-base">姓名</th>
                             <th class="py-3 sm:py-4 px-3 sm:px-4 text-center w-20 sm:w-24 whitespace-nowrap text-sm sm:text-base">總分</th>
-                            <th class="py-3 sm:py-4 px-3 sm:px-4 min-w-[200px] text-sm sm:text-base">備註 / 扣分原因紀錄</th>
+                            <th class="py-3 sm:py-4 px-3 sm:px-4 min-w-[200px] text-sm sm:text-base">備註</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="text-xs sm:text-sm divide-y divide-[#EAE6DF]">
@@ -136,10 +124,10 @@
     </main>
 
     <footer class="text-center py-4 sm:py-6 text-[#A5A58D] text-[10px] sm:text-xs font-serif-tc tracking-widest mt-auto border-t border-[#D5CFC4]">
-        &copy; <span id="currentYear"></span> 和風常規查詢系統 | Powered by Firebase
+        &copy; <span id="currentYear"></span> 605常規查詢系統 | Powered by Firebase
     </footer>
 
-    <!-- ==================== 管理員專區 Modal (響應式調整) ==================== -->
+    <!-- ==================== 管理員專區 Modal ==================== -->
     <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex justify-center items-center backdrop-blur-sm p-4">
         <div class="bg-[#F4F1EA] rounded-sm shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col border-t-4 border-[#CB997E]">
             
@@ -207,7 +195,7 @@
         document.getElementById('currentYear').textContent = new Date().getFullYear();
 
         // Firebase 設置
-      const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyAmFsYszaIDv2YnJNOi0oOf0rzqEE2yx5s",
   authDomain: "rules-2b444.firebaseapp.com",
   projectId: "rules-2b444",
@@ -358,22 +346,18 @@
                 const isWarning = parseInt(row.score) < 70;
                 
                 const tdSeat = document.createElement('td');
-                // 加入 whitespace-nowrap 確保手機版座號不折行
                 tdSeat.className = 'py-3 sm:py-4 px-3 sm:px-4 text-center font-medium text-[#A5A58D] whitespace-nowrap';
                 tdSeat.textContent = row.seatNo;
                 
                 const tdName = document.createElement('td');
-                // 加入 whitespace-nowrap 確保手機版姓名不折行
                 tdName.className = 'py-3 sm:py-4 px-3 sm:px-4 font-bold text-[#3E3A39] text-sm sm:text-base font-serif-tc tracking-widest whitespace-nowrap';
                 tdName.textContent = row.name;
 
                 const tdScore = document.createElement('td');
-                // 加入 whitespace-nowrap 確保分數不折行
                 tdScore.className = `py-3 sm:py-4 px-3 sm:px-4 text-center font-bold text-lg sm:text-xl whitespace-nowrap ${isWarning ? 'text-[#9E2A2B]' : 'text-[#6B705C]'}`;
                 tdScore.innerHTML = isWarning ? `${row.score} <i class="fas fa-exclamation-circle text-xs align-top ml-0.5"></i>` : row.score;
 
                 const tdRemark = document.createElement('td');
-                // 設定最小寬度，讓備註內容在手機上有足夠空間，觸發表格橫向滑動
                 tdRemark.className = 'py-3 px-3 sm:px-4 min-w-[200px] text-xs sm:text-sm';
                 
                 let remarkHtml = '';
