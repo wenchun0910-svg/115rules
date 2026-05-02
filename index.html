@@ -97,16 +97,15 @@
             <p class="font-serif-tc tracking-widest text-sm sm:text-base">資料同步中...</p>
         </div>
 
-        <!-- 極簡資料表格 (增強響應式滑動) -->
-        <div id="tableContainer" class="bg-white rounded-sm shadow-sm border border-[#D5CFC4] overflow-hidden hidden flex-grow relative mt-2">
-            <div class="overflow-x-auto w-full h-full pb-2">
+        <!-- 極簡資料表格 -->
+        <div id="tableContainer" class="bg-white rounded-sm shadow-sm border border-[#D5CFC4] overflow-hidden hidden relative mt-2">
+            <div class="overflow-x-auto w-full pb-2">
                 <table class="min-w-full text-left border-collapse">
                     <thead id="tableHead" class="bg-[#F9F8F6] text-[#6B705C] border-b-2 border-[#D5CFC4] font-serif-tc tracking-wide">
                         <tr>
                             <th class="py-3 sm:py-4 px-3 sm:px-4 text-center w-16 sm:w-20 whitespace-nowrap text-sm sm:text-base">座號</th>
-                            <th class="py-3 sm:py-4 px-3 sm:px-4 w-24 sm:w-32 whitespace-nowrap text-sm sm:text-base">姓名</th>
-                            <th class="py-3 sm:py-4 px-3 sm:px-4 text-center w-20 sm:w-24 whitespace-nowrap text-sm sm:text-base">總分</th>
-                            <th class="py-3 sm:py-4 px-3 sm:px-4 min-w-[200px] text-sm sm:text-base">備註</th>
+                            <th class="py-3 sm:py-4 px-3 sm:px-4 w-full whitespace-nowrap text-sm sm:text-base">姓名</th>
+                            <th class="py-3 sm:py-4 px-3 sm:px-4 text-center w-24 sm:w-28 whitespace-nowrap text-sm sm:text-base">總分</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="text-xs sm:text-sm divide-y divide-[#EAE6DF]">
@@ -121,10 +120,16 @@
             <i class="fas fa-wind text-3xl sm:text-4xl mb-3 opacity-50"></i>
             <p class="font-serif-tc tracking-widest text-base sm:text-lg">查無相關紀錄</p>
         </div>
+
+        <!-- 獨立的行為扣分與備註紀錄區塊 -->
+        <div id="behaviorContainer" class="hidden flex flex-col gap-4 mt-2">
+            <!-- 由 JS 動態生成 -->
+        </div>
+
     </main>
 
     <footer class="text-center py-4 sm:py-6 text-[#A5A58D] text-[10px] sm:text-xs font-serif-tc tracking-widest mt-auto border-t border-[#D5CFC4]">
-        &copy; <span id="currentYear"></span> 605常規查詢系統 | Powered by Firebase
+        &copy; <span id="currentYear"></span> 和風常規查詢系統 | Powered by Firebase
     </footer>
 
     <!-- ==================== 管理員專區 Modal ==================== -->
@@ -160,6 +165,9 @@
                         <h4 class="font-bold text-[#3E3A39] mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
                             <i class="fas fa-file-csv text-[#6B705C]"></i> 匯入班級常規 (.csv)
                         </h4>
+                        <!-- 新增：自訂週次輸入框 -->
+                        <input type="text" id="importWeekName" placeholder="請輸入週次 (例如：第1週)" class="block w-full text-xs sm:text-sm py-2 px-3 border border-[#D5CFC4] rounded-sm mb-3 focus:outline-none focus:border-[#CB997E] text-[#3E3A39]">
+                        
                         <input type="file" id="csvFileInput" accept=".csv" class="block w-full text-xs sm:text-sm text-gray-500 file:mr-2 sm:file:mr-4 file:py-1.5 sm:file:py-2 file:px-3 sm:file:px-4 file:rounded-sm file:border-0 file:text-xs sm:file:text-sm file:font-semibold file:bg-[#F9F8F6] file:text-[#6B705C] hover:file:bg-[#EAE6DF] cursor-pointer border border-[#D5CFC4] rounded-sm mb-3">
                         <button id="btnImport" class="w-full bg-[#CB997E] hover:bg-[#b0846c] text-white py-2 rounded-sm font-bold transition flex items-center justify-center gap-2 text-sm sm:text-base">
                             <i class="fas fa-upload"></i> 上傳並解析寫入
@@ -195,7 +203,7 @@
         document.getElementById('currentYear').textContent = new Date().getFullYear();
 
         // Firebase 設置
-       const firebaseConfig = {
+      const firebaseConfig = {
   apiKey: "AIzaSyAmFsYszaIDv2YnJNOi0oOf0rzqEE2yx5s",
   authDomain: "rules-2b444.firebaseapp.com",
   projectId: "rules-2b444",
@@ -222,6 +230,7 @@
             loader: document.getElementById('loader'),
             tableContainer: document.getElementById('tableContainer'),
             tableBody: document.getElementById('tableBody'),
+            behaviorContainer: document.getElementById('behaviorContainer'),
             noResults: document.getElementById('noResults'),
             
             btnOpenAdmin: document.getElementById('btnOpenAdmin'),
@@ -233,6 +242,7 @@
             btnLogin: document.getElementById('btnLogin'),
             adminMessage: document.getElementById('adminMessage'),
             
+            importWeekName: document.getElementById('importWeekName'),
             csvFileInput: document.getElementById('csvFileInput'),
             btnImport: document.getElementById('btnImport'),
             deleteWeekSelector: document.getElementById('deleteWeekSelector'),
@@ -287,7 +297,7 @@
         // ==========================================
         function processWeeks() {
             const weeksSet = new Set(appState.rawData.map(item => item.week));
-            appState.weeks = Array.from(weeksSet).sort().reverse();
+            appState.weeks = Array.from(weeksSet).sort().reverse(); // 將週次簡單排序
             
             dom.weekSelector.innerHTML = '';
             dom.deleteWeekSelector.innerHTML = '<option value="">請選擇要刪除的週次</option>';
@@ -332,6 +342,7 @@
             dom.tableBody.innerHTML = '';
             if (dataArray.length === 0) {
                 dom.tableContainer.classList.add('hidden');
+                dom.behaviorContainer.classList.add('hidden');
                 dom.noResults.classList.remove('hidden');
                 return;
             } else {
@@ -339,6 +350,7 @@
                 dom.noResults.classList.add('hidden');
             }
 
+            // 1. 繪製純粹的三欄式主表格
             dataArray.forEach(row => {
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-[#F9F8F6] transition duration-200';
@@ -350,40 +362,97 @@
                 tdSeat.textContent = row.seatNo;
                 
                 const tdName = document.createElement('td');
-                tdName.className = 'py-3 sm:py-4 px-3 sm:px-4 font-bold text-[#3E3A39] text-sm sm:text-base font-serif-tc tracking-widest whitespace-nowrap';
+                tdName.className = 'py-3 sm:py-4 px-3 sm:px-4 font-bold text-[#3E3A39] text-sm sm:text-base font-serif-tc tracking-widest w-full';
                 tdName.textContent = row.name;
 
                 const tdScore = document.createElement('td');
                 tdScore.className = `py-3 sm:py-4 px-3 sm:px-4 text-center font-bold text-lg sm:text-xl whitespace-nowrap ${isWarning ? 'text-[#9E2A2B]' : 'text-[#6B705C]'}`;
                 tdScore.innerHTML = isWarning ? `${row.score} <i class="fas fa-exclamation-circle text-xs align-top ml-0.5"></i>` : row.score;
 
-                const tdRemark = document.createElement('td');
-                tdRemark.className = 'py-3 px-3 sm:px-4 min-w-[200px] text-xs sm:text-sm';
-                
-                let remarkHtml = '';
-                if (row.remark && row.remark.trim() !== '') {
-                    remarkHtml += `<div class="text-[#3E3A39] mb-1 leading-relaxed"><i class="fas fa-comment-dots text-[#A5A58D] mr-1 text-[10px] sm:text-xs"></i>${row.remark}</div>`;
-                }
-                if (row.deductions && row.deductions.length > 0) {
-                    const dedsHtml = row.deductions.map(d => {
-                        return `<span class="inline-block bg-[#FDF8F5] border border-[#F5E6DF] text-[#9E2A2B] text-[10px] sm:text-xs px-2 py-1 rounded-sm mr-1 sm:mr-2 mb-1 shadow-sm whitespace-nowrap">
-                                   <span class="font-bold">${d.day}</span>: ${d.reason} (扣${d.amount}分)
-                                </span>`;
-                    }).join('');
-                    remarkHtml += `<div class="mt-1">${dedsHtml}</div>`;
-                }
-
-                if (!remarkHtml) remarkHtml = `<span class="text-gray-400">無紀錄</span>`;
-                tdRemark.innerHTML = remarkHtml;
-
                 if (isWarning) tr.classList.add('bg-[#FFF8F8]');
 
                 tr.appendChild(tdSeat);
                 tr.appendChild(tdName);
                 tr.appendChild(tdScore);
-                tr.appendChild(tdRemark);
                 dom.tableBody.appendChild(tr);
             });
+
+            // 2. 呼叫繪製底部的行為紀錄
+            renderBehaviors(dataArray);
+        }
+
+        function renderBehaviors(dataArray) {
+            const container = dom.behaviorContainer;
+            container.innerHTML = '';
+            
+            // 過濾出有扣分紀錄 或 有備註的學生
+            const studentsWithRecords = dataArray.filter(row => 
+                (row.deductions && row.deductions.length > 0) || (row.remark && row.remark.trim() !== '')
+            );
+
+            if (studentsWithRecords.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+
+            // 區塊標題
+            const title = document.createElement('h3');
+            title.className = 'text-base sm:text-lg font-bold text-[#3E3A39] border-b-2 border-[#D5CFC4] pb-2 mt-4 font-serif-tc flex items-center gap-2';
+            title.innerHTML = '<i class="fas fa-clipboard-list text-[#6B705C]"></i> 學生詳細扣分紀錄';
+            container.appendChild(title);
+
+            // 卡片網格容器
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+            
+            studentsWithRecords.forEach(row => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-sm shadow-sm border border-[#D5CFC4] flex flex-col gap-3';
+                
+                let cardInnerHtml = `
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="bg-[#3E3A39] text-[#F4F1EA] rounded-full h-7 w-7 flex items-center justify-center font-bold text-sm shadow-sm">${row.seatNo}</span>
+                        <h4 class="font-bold text-[#3E3A39] text-base sm:text-lg font-serif-tc tracking-widest">${row.name}</h4>
+                    </div>
+                `;
+
+                // 處理常規扣分方塊
+                if (row.deductions && row.deductions.length > 0) {
+                    cardInnerHtml += `
+                    <h5 class="text-xs font-bold text-[#6B705C] border-b border-[#EAE6DF] pb-1 mb-1 flex items-center gap-1">
+                        <i class="fas fa-calendar-times text-[#9E2A2B]"></i> 常規扣分紀錄
+                    </h5>
+                    <div class="flex flex-wrap gap-2">
+                        ${row.deductions.map(d => `
+                            <div class="flex flex-col items-center justify-center bg-[#F9F8F6] p-2 rounded-sm border border-[#D5CFC4] min-w-[4.5rem] shadow-sm">
+                                <span class="text-xs font-medium text-[#A5A58D] mb-1">${d.day}</span>
+                                <span class="text-[#9E2A2B] font-extrabold text-lg leading-none mb-1.5">${d.reason}</span>
+                                <span class="text-[#9E2A2B] text-[10px] font-bold bg-[#FFF8F8] border border-[#F5E6DF] px-2 py-0.5 rounded-sm whitespace-nowrap">扣 ${d.amount} 分</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    `;
+                }
+
+                // 處理備註文字
+                if (row.remark && row.remark.trim() !== '') {
+                    cardInnerHtml += `
+                    <div class="mt-auto pt-2">
+                        <h5 class="text-xs font-bold text-[#6B705C] border-b border-[#EAE6DF] pb-1 mb-1 flex items-center gap-1">
+                            <i class="fas fa-comment-dots text-[#A5A58D]"></i> 備註
+                        </h5>
+                        <p class="text-xs sm:text-sm text-[#3E3A39] bg-[#F9F8F6] p-2.5 rounded-sm border border-[#D5CFC4] leading-relaxed">${row.remark}</p>
+                    </div>
+                    `;
+                }
+
+                card.innerHTML = cardInnerHtml;
+                grid.appendChild(card);
+            });
+
+            container.appendChild(grid);
         }
 
         dom.weekSelector.addEventListener('change', (e) => {
@@ -456,6 +525,8 @@
 
         dom.btnImport.addEventListener('click', async () => {
             const file = dom.csvFileInput.files[0];
+            const customWeekName = dom.importWeekName.value.trim(); // 取得使用者自訂的週次名稱
+
             if (!file) {
                 showAdminMessage("請先選擇要上傳的 .csv 檔案。", "error");
                 return;
@@ -473,7 +544,9 @@
 
                     const titleRow = rows[0].join('');
                     const weekMatch = titleRow.match(/第[0-9]+週/);
-                    const weekName = weekMatch ? weekMatch[0] : `自訂_${new Date().getTime()}`;
+                    
+                    // 邏輯: 優先使用自訂名稱 -> 其次擷取 Excel 標題的週次 -> 兩者皆無則使用時間戳記
+                    const weekName = customWeekName || (weekMatch ? weekMatch[0] : `自訂_${new Date().getTime()}`);
 
                     const headers = rows[1];
                     const dataToUpload = [];
@@ -522,8 +595,9 @@
                         await setDoc(doc(scoresRef, docId), item);
                     }
 
-                    showAdminMessage(`✅ 成功匯入 ${weekName}，共 ${dataToUpload.length} 筆資料！`, "success");
+                    showAdminMessage(`✅ 成功匯入「${weekName}」，共 ${dataToUpload.length} 筆資料！`, "success");
                     dom.csvFileInput.value = ''; 
+                    dom.importWeekName.value = ''; // 匯入成功後清空輸入框
 
                 } catch (err) {
                     console.error(err);
@@ -555,7 +629,7 @@
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'scores', docId));
                 }
 
-                showAdminMessage(`🗑️ 已成功刪除 ${targetWeek} 的所有紀錄！`, "success");
+                showAdminMessage(`🗑️ 已成功刪除「${targetWeek}」的所有紀錄！`, "success");
                 
                 if (appState.currentWeek === targetWeek) {
                     appState.currentWeek = "";
