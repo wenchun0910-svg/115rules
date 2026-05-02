@@ -218,7 +218,7 @@
         document.getElementById('currentYear').textContent = new Date().getFullYear();
 
         // Firebase 設置
-       const firebaseConfig = {
+        const firebaseConfig = {
   apiKey: "AIzaSyAmFsYszaIDv2YnJNOi0oOf0rzqEE2yx5s",
   authDomain: "rules-2b444.firebaseapp.com",
   projectId: "rules-2b444",
@@ -377,7 +377,6 @@
                 tdSeat.textContent = row.seatNo;
                 
                 const tdName = document.createElement('td');
-                // 姓名欄位設定 w-full，讓它自適應撐開畫面，將分數推至右側
                 tdName.className = 'py-3 sm:py-4 px-3 sm:px-4 font-bold text-[#3E3A39] text-sm sm:text-base font-serif-tc tracking-widest w-full whitespace-nowrap';
                 tdName.textContent = row.name;
 
@@ -401,7 +400,6 @@
             const container = dom.behaviorContainer;
             container.innerHTML = '';
             
-            // 只要有顯示表格資料，這個區塊就一定要打開
             container.classList.remove('hidden');
 
             // 區塊標題
@@ -410,16 +408,16 @@
             title.innerHTML = '<i class="fas fa-exclamation-triangle text-[#9E2A2B]"></i> 扣分狀況說明';
             container.appendChild(title);
 
-            // 僅過濾出匯入資料中「備註」欄位有內容的學生
+            // 【完全精簡】只抓取匯入資料中「備註欄」(row.remark) 有內容的學生
             const studentsWithRemarks = dataArray.filter(row => 
                 (row.remark && row.remark.trim() !== '')
             );
 
-            // 如果全班都沒有人有備註紀錄
+            // 如果全班都沒有人在備註欄被註記
             if (studentsWithRemarks.length === 0) {
                 const emptyMsg = document.createElement('div');
                 emptyMsg.className = 'bg-[#FDF8F5] p-4 rounded-sm border border-[#F5E6DF] text-[#6B705C] text-center text-sm sm:text-base mt-3 font-medium shadow-sm';
-                emptyMsg.innerHTML = '<i class="fas fa-check-circle text-[#A5A58D] mr-1"></i> 本週全班表現優良，無扣分紀錄！';
+                emptyMsg.innerHTML = '<i class="fas fa-check-circle text-[#A5A58D] mr-1"></i> 本週全班無扣分說明紀錄！';
                 container.appendChild(emptyMsg);
                 return;
             }
@@ -432,12 +430,13 @@
                 const li = document.createElement('li');
                 li.className = 'bg-white p-3 sm:p-4 rounded-sm shadow-sm border border-[#D5CFC4] flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4';
                 
+                // 直接將備註欄的文字呈現在這裡
                 let contentHtml = `
                     <div class="flex items-center gap-2 sm:w-32 flex-shrink-0">
                         <span class="bg-[#3E3A39] text-[#F4F1EA] rounded-full h-6 w-6 flex items-center justify-center font-bold text-xs shadow-sm">${row.seatNo}</span>
                         <span class="font-bold text-[#3E3A39] text-sm sm:text-base font-serif-tc tracking-widest">${row.name}</span>
                     </div>
-                    <div class="text-xs sm:text-sm text-[#9E2A2B] leading-relaxed flex-grow font-medium">
+                    <div class="text-xs sm:text-sm text-[#9E2A2B] leading-relaxed flex-grow font-medium flex flex-wrap items-center">
                         ${row.remark.replace(/\n/g, '<br>')}
                     </div>
                 `;
@@ -551,32 +550,17 @@
                         const seatNo = row[0].trim();
                         const name = row[1] ? row[1].trim() : '';
                         const score = row[2] ? row[2].trim() : '';
-                        const remark = row[row.length - 1] ? row[row.length - 1].trim() : ''; 
                         
-                        const deductions = [];
-                        for(let j = 3; j < headers.length - 1; j++) {
-                            const headerTitle = headers[j] ? headers[j].trim() : '';
-                            if (headerTitle.includes("星期")) {
-                                const behavior = row[j] ? row[j].trim() : '';
-                                const amount = row[j+1] ? row[j+1].trim() : ''; 
-                                
-                                if (behavior || (amount && amount !== '0')) {
-                                    deductions.push({ 
-                                        day: headerTitle, 
-                                        reason: behavior || "無說明", 
-                                        amount: amount || "0" 
-                                    });
-                                }
-                            }
-                        }
-
+                        // 【優化抓取最後一欄】使用 headers 的長度精準定位最後一欄(備註)
+                        const remarkIndex = headers.length - 1;
+                        const remark = row[remarkIndex] ? row[remarkIndex].trim() : ''; 
+                        
                         dataToUpload.push({
                             week: weekName,
                             seatNo: parseInt(seatNo),
                             name: name,
                             score: score,
-                            remark: remark,
-                            deductions: deductions
+                            remark: remark
                         });
                     }
 
