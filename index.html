@@ -205,6 +205,30 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // ==========================================
+        // 🔴 Firebase 自訂資料庫設定區 🔴
+        // ==========================================
+        // 若您要將此系統放到自己的網站並使用自己的 Firebase 資料庫，
+        // 請將下方的 null 替換成您從 Firebase Console 取得的設定物件。
+        // 例如：
+        // const MY_FIREBASE_CONFIG = {
+        //     apiKey: "AIzaSyB-xxxxxxxxxxxxxxxxxxxxxxx",
+        //     authDomain: "your-project.firebaseapp.com",
+        //     projectId: "your-project",
+        //     storageBucket: "your-project.appspot.com",
+        //     messagingSenderId: "1234567890",
+        //     appId: "1:1234567890:web:xxxxxxxxxxxxxxxxx"
+        // };
+       const firebaseConfig = {
+  apiKey: "AIzaSyAmFsYszaIDv2YnJNOi0oOf0rzqEE2yx5s",
+  authDomain: "rules-2b444.firebaseapp.com",
+  projectId: "rules-2b444",
+  storageBucket: "rules-2b444.firebasestorage.app",
+  messagingSenderId: "399429207355",
+  appId: "1:399429207355:web:7cbbc07d8186780553631e"
+};
+
+
         // --- 全域變數定義 ---
         let db, auth, currentUser;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'routine-scores-app';
@@ -302,16 +326,13 @@
 
         // --- Firebase 初始化與資料連線 ---
         const initFirebase = async () => {
-           let firebaseConfig = {
-          apiKey: "AIzaSyAmFsYszaIDv2YnJNOi0oOf0rzqEE2yx5s",
-  authDomain: "rules-2b444.firebaseapp.com",
-  projectId: "rules-2b444",
-  storageBucket: "rules-2b444.firebasestorage.app",
-  messagingSenderId: "399429207355",
-  appId: "1:399429207355:web:7cbbc07d8186780553631e"
-
-            };
-
+            let firebaseConfig;
+            try {
+                // 優先使用使用者自訂的 Firebase 設定，若無則使用環境臨時提供的設定
+                if (MY_FIREBASE_CONFIG) {
+                    firebaseConfig = MY_FIREBASE_CONFIG;
+                } else if (typeof __firebase_config !== 'undefined') {
+                    firebaseConfig = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : __firebase_config;
                 } else {
                     firebaseConfig = { projectId: "mock-project" };
                 }
