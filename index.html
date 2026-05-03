@@ -247,6 +247,22 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // =========================================================================
+        // 🔴🔴🔴 請在這裡填入您的 Firebase 資料庫設定 🔴🔴🔴
+        // =========================================================================
+        // 💡 說明：請參考您之前截圖中的 Firebase SDK 設定，將數值貼到下方的雙引號 "" 內。
+        // 只要填寫了 apiKey，系統就會自動連接到您的專屬資料庫！
+        const MY_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyAmFsYszaIDv2YnJNOi0oOf0rzqEE2yx5s",
+  authDomain: "rules-2b444.firebaseapp.com",
+  projectId: "rules-2b444",
+  storageBucket: "rules-2b444.firebasestorage.app",
+  messagingSenderId: "399429207355",
+  appId: "1:399429207355:web:7cbbc07d8186780553631e"
+
+        };
+        // =========================================================================
+
         // --- 全域變數定義 ---
         let db, auth, currentUser;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'routine-scores-app';
@@ -340,16 +356,15 @@
         const initFirebase = async () => {
             let firebaseConfig;
             try {
-                if (typeof __firebase_config !== 'undefined') {
-                       const MY_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAmFsYszaIDv2YnJNOi0oOf0rzqEE2yx5s",
-  authDomain: "rules-2b444.firebaseapp.com",
-  projectId: "rules-2b444",
-  storageBucket: "rules-2b444.firebasestorage.app",
-  messagingSenderId: "399429207355",
-  appId: "1:399429207355:web:7cbbc07d8186780553631e"
-};
+                // 判斷是否有填寫上方的專屬 Firebase 設定
+                const isCustomConfigSet = MY_FIREBASE_CONFIG && MY_FIREBASE_CONFIG.apiKey && MY_FIREBASE_CONFIG.apiKey.trim() !== "";
 
+                if (isCustomConfigSet) {
+                    // 使用您填寫的專屬資料庫
+                    firebaseConfig = MY_FIREBASE_CONFIG;
+                } else if (typeof __firebase_config !== 'undefined') {
+                    // 若未填寫，使用環境預設的臨時測試資料庫
+                    firebaseConfig = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : __firebase_config;
                 } else {
                     firebaseConfig = { projectId: "mock-project" };
                 }
