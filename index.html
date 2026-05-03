@@ -2,272 +2,242 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>班級常規分數查詢系統 - 和風版</title>
-    
-    <!-- 引入 Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班級常規分數查詢系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 引入 FontAwesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- 引入 Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* 色彩與字體配置 */
-        :root {
-            --color-washi: #F4F1EA; /* 和紙白 */
-            --color-sumi: #3E3A39;  /* 墨黑 */
-            --color-matcha: #6B705C; /* 抹茶綠 */
-            --color-matcha-light: #A5A58D;
-            --color-sakura: #CB997E; /* 櫻花/陶土色 */
-            --color-kurenai: #9E2A2B; /* 傳統暗紅 */
-            --color-border: #D5CFC4; /* 邊框色 */
-        }
-
         body {
-            background-color: var(--color-washi);
-            color: var(--color-sumi);
             font-family: 'Noto Sans TC', sans-serif;
-            background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><g fill="%23e5e0d8" fill-opacity="0.4" fill-rule="evenodd"><circle cx="50" cy="50" r="2"/></g></svg>');
+            background-color: #fffafb; /* 櫻花粉白底色 */
+            color: #5e4d4f; /* 日式褐灰色字體 */
         }
-
-        .font-serif-tc { font-family: 'Noto Serif TC', serif; }
-
-        /* 標題裝飾線 */
-        .title-decoration { position: relative; display: inline-block; }
-        .title-decoration::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40px;
-            height: 3px;
-            background-color: var(--color-sakura);
-            border-radius: 2px;
+        .sakura-border {
+            border: 1px solid #f0e1e3;
+            box-shadow: 0 4px 10px -2px rgba(223, 168, 177, 0.1);
         }
-
+        .table-row-even {
+            background-color: #ffffff;
+        }
+        .table-row-odd {
+            background-color: #fff7f8;
+        }
         /* 自定義捲軸 */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: var(--color-washi); }
-        ::-webkit-scrollbar-thumb { background: var(--color-matcha-light); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--color-matcha); }
-
-        .hidden { display: none !important; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #fff5f6; }
+        ::-webkit-scrollbar-thumb { background: #e6c5c9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d4a7ac; }
+        
+        /* Toast 動畫 */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col relative overflow-x-hidden">
+<body class="min-h-screen flex flex-col">
 
-    <!-- 頂部導航列 -->
-    <header class="bg-[#6B705C] text-[#F4F1EA] shadow-md py-4 sm:py-5 px-4 sm:px-6 sticky top-0 z-30 border-b-4 border-[#CB997E]">
-        <div class="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-            <h1 class="text-xl sm:text-2xl font-bold font-serif-tc tracking-widest flex items-center gap-3">
-                <i class="fas fa-leaf text-[#CB997E]"></i>
-                <span class="title-decoration">常規分數查詢</span>
-            </h1>
-            
-            <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                <!-- 週次選擇器 -->
-                <div class="relative flex-grow sm:w-48">
-                    <select id="weekSelector" class="w-full appearance-none bg-[#F4F1EA] text-[#3E3A39] border-2 border-[#A5A58D] py-2 px-3 sm:px-4 pr-8 rounded-sm font-medium focus:outline-none focus:border-[#CB997E] focus:ring-1 focus:ring-[#CB997E] transition cursor-pointer shadow-sm text-sm sm:text-base">
-                        <option value="">讀取中...</option>
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#6B705C]">
-                        <i class="fas fa-angle-down"></i>
-                    </div>
-                </div>
-                <!-- 管理按鈕 -->
-                <button id="btnOpenAdmin" class="bg-[#A5A58D] hover:bg-[#CB997E] text-white px-3 sm:px-4 py-2 rounded-sm transition shadow-sm whitespace-nowrap flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
-                    <i class="fas fa-cog"></i> <span class="hidden sm:inline">管理</span>
-                </button>
-            </div>
+    <!-- Header -->
+    <header class="bg-[#dfa8b1] text-white py-4 px-6 shadow-sm flex justify-between items-center sticky top-0 z-10 border-b border-[#d197a0]">
+        <div class="flex items-center gap-2">
+            <i data-lucide="flower" class="w-6 h-6 text-[#fffafb]"></i>
+            <h1 class="text-xl md:text-2xl font-bold tracking-wide">班級常規分數查詢</h1>
         </div>
+        <button id="navAdminBtn" onclick="toggleAdminLogin()" class="text-sm bg-[#c98d96] hover:bg-[#b57a83] text-white transition-colors px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
+            <i data-lucide="settings" class="w-4 h-4"></i> 管理
+        </button>
     </header>
 
-    <!-- 主要內容區 -->
-    <main class="flex-grow max-w-5xl mx-auto w-full p-3 sm:p-6 flex flex-col gap-4 sm:gap-6">
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-4xl relative">
         
-        <!-- 常見扣分代碼參考卡片 -->
-        <div class="bg-white p-4 sm:p-5 rounded-sm shadow-sm border border-[#D5CFC4] relative overflow-hidden">
-            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#CB997E]"></div>
-            <div class="pl-2 sm:pl-3 text-[#3E3A39]">
-                <h2 class="font-serif-tc font-bold text-base sm:text-lg mb-3 text-[#6B705C]">📝 常見扣分代碼參考</h2>
-                <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
-                    <span class="bg-[#F9F8F6] px-2 py-1.5 rounded-sm border border-[#D5CFC4] shadow-sm text-[#3E3A39]"><strong>h</strong> : 作業未交/未帶</span>
-                    <span class="bg-[#F9F8F6] px-2 py-1.5 rounded-sm border border-[#D5CFC4] shadow-sm text-[#3E3A39]"><strong>c</strong> : 遲到</span>
-                    <span class="bg-[#F9F8F6] px-2 py-1.5 rounded-sm border border-[#D5CFC4] shadow-sm text-[#3E3A39]"><strong>d</strong> : 打掃不認真</span>
-                    <span class="bg-[#F9F8F6] px-2 py-1.5 rounded-sm border border-[#D5CFC4] shadow-sm text-[#3E3A39]"><strong>p</strong> : 午休/課堂秩序</span>
-                    <span class="bg-[#F9F8F6] px-2 py-1.5 rounded-sm border border-[#D5CFC4] shadow-sm text-[#3E3A39]"><strong>a</strong> : 升旗/早自修違規</span>
+        <!-- Student View (Default) -->
+        <div id="studentView" class="space-y-6 block">
+            
+            <!-- 選擇週次 -->
+            <div class="bg-white p-6 rounded-2xl sakura-border flex flex-col md:flex-row items-center gap-4">
+                <label for="weekSelect" class="text-lg font-bold text-[#5e4d4f] flex items-center gap-2">
+                    <i data-lucide="calendar-days" class="w-5 h-5 text-[#dfa8b1]"></i> 選擇週次：
+                </label>
+                <select id="weekSelect" class="block w-full md:w-64 pl-3 pr-10 py-2.5 text-base border-[#f0e1e3] focus:outline-none focus:ring-[#dfa8b1] focus:border-[#dfa8b1] sm:text-sm rounded-xl bg-[#fffafb] text-[#5e4d4f] transition-all" onchange="displaySelectedWeek()">
+                    <option value="">載入中...</option>
+                </select>
+            </div>
+
+            <!-- 內容顯示區 -->
+            <div id="contentArea" class="hidden space-y-6">
+                <!-- 扣分說明 -->
+                <div class="bg-[#fff5f6] p-5 rounded-2xl sakura-border border-l-4 border-l-[#dfa8b1]">
+                    <h3 class="text-lg font-bold mb-3 flex items-center gap-2 text-[#5e4d4f]">
+                        <i data-lucide="message-circle-warning" class="w-5 h-5 text-[#dfa8b1]"></i> 扣分說明
+                    </h3>
+                    <div id="deductionText" class="text-[#756264] leading-relaxed whitespace-pre-wrap font-medium break-words">
+                        <!-- 動態插入扣分說明 -->
+                    </div>
+                </div>
+
+                <!-- 分數表格 -->
+                <div class="bg-white rounded-2xl sakura-border overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-[#f0e1e3]">
+                            <thead class="bg-[#fcf0f2]">
+                                <tr>
+                                    <th scope="col" class="px-6 py-4 text-left text-sm font-bold text-[#8f7b7d] uppercase tracking-wider w-1/4">座號</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-sm font-bold text-[#8f7b7d] uppercase tracking-wider w-1/2">姓名</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-sm font-bold text-[#8f7b7d] uppercase tracking-wider w-1/4">總分</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scoreTableBody" class="divide-y divide-[#f0e1e3]">
+                                <!-- 動態插入表格內容 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 無資料提示 -->
+            <div id="noDataArea" class="text-center py-16 text-[#bdaab0] hidden">
+                <i data-lucide="leaf" class="w-12 h-12 mx-auto mb-4 opacity-50"></i>
+                <p class="text-lg font-medium">目前尚無資料，請等待老師匯入。</p>
+            </div>
+        </div>
+
+        <!-- Admin Login Modal -->
+        <div id="adminLoginModal" class="hidden absolute inset-0 z-20 bg-[#fffafb]/90 flex justify-center pt-20 backdrop-blur-sm">
+            <div class="bg-white p-8 rounded-2xl sakura-border max-w-sm w-full h-fit shadow-xl border-t-4 border-t-[#dfa8b1]">
+                <h2 class="text-2xl font-bold mb-6 text-center text-[#5e4d4f]">管理員登入</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-[#5e4d4f] mb-1">請輸入密碼</label>
+                        <input type="password" id="adminPassword" class="block w-full px-4 py-2.5 bg-[#fffafb] border border-[#f0e1e3] rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#dfa8b1] focus:border-transparent transition-all" placeholder="預設為 admin123" onkeypress="if(event.key === 'Enter') loginAdmin()">
+                    </div>
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="toggleAdminLogin()" class="flex-1 bg-[#f5e6e8] hover:bg-[#ebd2d5] text-[#5e4d4f] font-bold py-2.5 px-4 rounded-xl transition-colors">取消</button>
+                        <button onclick="loginAdmin()" class="flex-1 bg-[#dfa8b1] hover:bg-[#c98d96] text-white font-bold py-2.5 px-4 rounded-xl transition-colors shadow-md">登入</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 載入動畫 -->
-        <div id="loader" class="flex-grow flex flex-col items-center justify-center py-20 text-[#6B705C]">
-            <i class="fas fa-circle-notch fa-spin text-4xl mb-4"></i>
-            <p class="font-serif-tc tracking-widest text-sm sm:text-base">資料同步中...</p>
-        </div>
-
-        <!-- 極簡資料表格 (只保留三欄) -->
-        <div id="tableContainer" class="bg-white rounded-sm shadow-sm border border-[#D5CFC4] overflow-hidden hidden relative mt-2">
-            <div class="overflow-x-auto w-full pb-2">
-                <table class="min-w-full text-left border-collapse">
-                    <thead id="tableHead" class="bg-[#F9F8F6] text-[#6B705C] border-b-2 border-[#D5CFC4] font-serif-tc tracking-wide">
-                        <tr>
-                            <th class="py-3 sm:py-4 px-3 sm:px-4 text-center w-16 sm:w-20 whitespace-nowrap text-sm sm:text-base">座號</th>
-                            <th class="py-3 sm:py-4 px-3 sm:px-4 w-full whitespace-nowrap text-sm sm:text-base">姓名</th>
-                            <th class="py-3 sm:py-4 px-3 sm:px-4 text-center w-24 sm:w-28 whitespace-nowrap text-sm sm:text-base">總分</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody" class="text-xs sm:text-sm divide-y divide-[#EAE6DF]">
-                        <!-- 內容由 JS 動態生成 -->
-                    </tbody>
-                </table>
+        <!-- Admin Dashboard -->
+        <div id="adminDashboard" class="hidden space-y-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-[#5e4d4f] flex items-center gap-2">
+                    <i data-lucide="layout-dashboard" class="w-6 h-6 text-[#dfa8b1]"></i> 管理面板
+                </h2>
+                <button onclick="logoutAdmin()" class="text-sm bg-[#f5e6e8] hover:bg-[#ebd2d5] text-[#5e4d4f] font-bold py-2 px-5 rounded-full transition-colors flex items-center gap-1">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> 登出
+                </button>
             </div>
-        </div>
-        
-        <!-- 無結果提示 -->
-        <div id="noResults" class="hidden text-center py-12 sm:py-16 bg-white rounded-sm border border-[#D5CFC4] text-[#A5A58D]">
-            <i class="fas fa-wind text-3xl sm:text-4xl mb-3 opacity-50"></i>
-            <p class="font-serif-tc tracking-widest text-base sm:text-lg">查無相關紀錄</p>
-        </div>
 
-        <!-- 獨立的扣分狀況與備註紀錄區塊 -->
-        <div id="behaviorContainer" class="hidden flex flex-col gap-4 mt-2">
-            <!-- 由 JS 動態生成 -->
+            <!-- 修改密碼區塊 -->
+            <div class="bg-white p-6 rounded-2xl sakura-border">
+                <h3 class="text-lg font-bold mb-4 border-b-2 border-[#fcf0f2] pb-3 text-[#5e4d4f] flex items-center gap-2">
+                    <i data-lucide="key-round" class="w-5 h-5 text-[#dfa8b1]"></i> 安全設定
+                </h3>
+                <div class="space-y-4 md:flex md:items-end md:gap-4 md:space-y-0">
+                    <div class="flex-grow">
+                        <label class="block text-sm font-bold text-[#756264] mb-1">修改管理員密碼</label>
+                        <input type="password" id="newAdminPassword" class="block w-full px-4 py-2 bg-[#fffafb] border border-[#f0e1e3] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#dfa8b1] focus:border-transparent transition-all" placeholder="輸入新密碼">
+                    </div>
+                    <button onclick="changeAdminPassword()" class="w-full md:w-auto bg-[#8ca891] hover:bg-[#78947d] text-white font-bold py-2 px-6 rounded-xl transition-colors shadow-sm mt-3 md:mt-0 flex items-center justify-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i> 儲存新密碼
+                    </button>
+                </div>
+            </div>
+
+            <!-- 匯入區塊 -->
+            <div class="bg-white p-6 rounded-2xl sakura-border">
+                <h3 class="text-lg font-bold mb-4 border-b-2 border-[#fcf0f2] pb-3 text-[#5e4d4f] flex items-center gap-2">
+                    <i data-lucide="file-up" class="w-5 h-5 text-[#dfa8b1]"></i> 匯入週次資料
+                </h3>
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-bold text-[#756264] mb-1">自訂週次名稱</label>
+                        <input type="text" id="importWeekName" class="block w-full md:w-1/2 px-4 py-2 bg-[#fffafb] border border-[#f0e1e3] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#dfa8b1] focus:border-transparent transition-all" placeholder="例如：六下第9週">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-[#756264] mb-2">上傳 CSV 檔案</label>
+                        <input type="file" id="importFile" accept=".csv" class="block w-full text-sm text-[#8f7b7d] file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#fcf0f2] file:text-[#dfa8b1] hover:file:bg-[#f5e6e8] transition-colors cursor-pointer">
+                        <p class="mt-2 text-xs text-[#bdaab0]">※ 請確保格式包含「座號,姓名,總分」以及最後的「扣分說明」。</p>
+                    </div>
+                    <button onclick="handleImport()" class="bg-[#dfa8b1] hover:bg-[#c98d96] text-white font-bold py-2.5 px-6 rounded-xl transition-colors flex items-center gap-2 shadow-md" id="importBtn">
+                        <i data-lucide="upload-cloud" class="w-5 h-5"></i> 開始匯入
+                    </button>
+                </div>
+            </div>
+
+            <!-- 管理現有資料 -->
+            <div class="bg-white p-6 rounded-2xl sakura-border">
+                <h3 class="text-lg font-bold mb-4 border-b-2 border-[#fcf0f2] pb-3 text-[#5e4d4f] flex items-center gap-2">
+                    <i data-lucide="database" class="w-5 h-5 text-[#dfa8b1]"></i> 管理已匯入資料
+                </h3>
+                <div class="overflow-x-auto rounded-xl border border-[#f0e1e3]">
+                    <table class="min-w-full divide-y divide-[#f0e1e3]">
+                        <thead class="bg-[#fcf0f2]">
+                            <tr>
+                                <th scope="col" class="px-6 py-4 text-left text-sm font-bold text-[#8f7b7d] uppercase tracking-wider">週次名稱</th>
+                                <th scope="col" class="px-6 py-4 text-left text-sm font-bold text-[#8f7b7d] uppercase tracking-wider">建立時間</th>
+                                <th scope="col" class="px-6 py-4 text-right text-sm font-bold text-[#8f7b7d] uppercase tracking-wider">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminWeeksTableBody" class="divide-y divide-[#f0e1e3]">
+                            <!-- 動態插入管理表格 -->
+                        </tbody>
+                    </table>
+                    <div id="adminNoData" class="text-center py-8 text-[#bdaab0] font-medium hidden">
+                        尚無任何資料
+                    </div>
+                </div>
+            </div>
         </div>
 
     </main>
 
-    <footer class="text-center py-4 sm:py-6 text-[#A5A58D] text-[10px] sm:text-xs font-serif-tc tracking-widest mt-auto border-t border-[#D5CFC4]">
-        &copy; <span id="currentYear"></span> 和風常規查詢系統 | Powered by Firebase
-    </footer>
-
-    <!-- ==================== 管理員專區 Modal ==================== -->
-    <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex justify-center items-center backdrop-blur-sm p-4">
-        <div class="bg-[#F4F1EA] rounded-sm shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col border-t-4 border-[#CB997E]">
-            
-            <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#D5CFC4] flex justify-between items-center bg-white sticky top-0 z-10">
-                <h3 class="font-serif-tc font-bold text-[#6B705C] text-base sm:text-lg"><i class="fas fa-shield-alt mr-2"></i>管理員專區</h3>
-                <button id="btnCloseAdmin" class="text-gray-400 hover:text-gray-700 transition">
-                    <i class="fas fa-times text-lg sm:text-xl"></i>
-                </button>
-            </div>
-            
-            <div class="p-4 sm:p-6 flex-grow relative">
-                <!-- 訊息提示區 -->
-                <div id="adminMessage" class="hidden mb-4 p-3 rounded-sm text-xs sm:text-sm font-bold text-center"></div>
-
-                <!-- 1. 登入視圖 -->
-                <div id="adminLoginView" class="flex flex-col gap-3 sm:gap-4">
-                    <p class="text-xs sm:text-sm text-[#3E3A39]">請輸入管理員密碼以進入後台功能：</p>
-                    <input type="password" id="adminPwd" placeholder="請輸入密碼..." class="w-full bg-white border border-[#D5CFC4] py-2 px-3 rounded-sm focus:outline-none focus:border-[#CB997E] text-sm">
-                    <button id="btnLogin" class="w-full bg-[#6B705C] hover:bg-[#585C4C] text-white py-2 rounded-sm font-bold transition mt-1 sm:mt-2 text-sm sm:text-base">
-                        登入
-                    </button>
-                    <p class="text-[10px] sm:text-xs text-center text-gray-400 mt-2">提示：預設密碼為 admin</p>
-                </div>
-
-                <!-- 2. 控制面板視圖 (登入後顯示) -->
-                <div id="adminDashboardView" class="hidden flex flex-col gap-4 sm:gap-6">
-                    
-                    <!-- 匯入功能 -->
-                    <div class="bg-white p-3 sm:p-4 rounded-sm border border-[#D5CFC4] shadow-sm">
-                        <h4 class="font-bold text-[#3E3A39] mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
-                            <i class="fas fa-file-csv text-[#6B705C]"></i> 匯入班級常規 (.csv)
-                        </h4>
-                        <!-- 自訂週次輸入框 -->
-                        <input type="text" id="importWeekName" placeholder="請輸入週次 (例如：第1週)" class="block w-full text-xs sm:text-sm py-2 px-3 border border-[#D5CFC4] rounded-sm mb-3 focus:outline-none focus:border-[#CB997E] text-[#3E3A39]">
-                        
-                        <input type="file" id="csvFileInput" accept=".csv" class="block w-full text-xs sm:text-sm text-gray-500 file:mr-2 sm:file:mr-4 file:py-1.5 sm:file:py-2 file:px-3 sm:file:px-4 file:rounded-sm file:border-0 file:text-xs sm:file:text-sm file:font-semibold file:bg-[#F9F8F6] file:text-[#6B705C] hover:file:bg-[#EAE6DF] cursor-pointer border border-[#D5CFC4] rounded-sm mb-3">
-                        <button id="btnImport" class="w-full bg-[#CB997E] hover:bg-[#b0846c] text-white py-2 rounded-sm font-bold transition flex items-center justify-center gap-2 text-sm sm:text-base">
-                            <i class="fas fa-upload"></i> 上傳並解析寫入
-                        </button>
-                    </div>
-
-                    <!-- 刪除功能 -->
-                    <div class="bg-white p-3 sm:p-4 rounded-sm border border-[#D5CFC4] shadow-sm">
-                        <h4 class="font-bold text-[#9E2A2B] mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
-                            <i class="fas fa-trash-alt"></i> 刪除整班紀錄
-                        </h4>
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <select id="deleteWeekSelector" class="flex-grow bg-[#F9F8F6] border border-[#D5CFC4] py-2 px-3 rounded-sm focus:outline-none text-xs sm:text-sm">
-                                <option value="">請選擇要刪除的週次</option>
-                            </select>
-                            <button id="btnDelete" class="bg-[#9E2A2B] hover:bg-[#7a2021] text-white px-4 py-2 rounded-sm font-bold transition text-xs sm:text-sm whitespace-nowrap w-full sm:w-auto">
-                                執行刪除
-                            </button>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
 
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        document.getElementById('currentYear').textContent = new Date().getFullYear();
+        // Global State
+        let db, auth, currentUser;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'routine-scores-app';
+        let allWeeksData = [];
+        let unsubscribeSnapshot = null;
+        let unsubscribeSettings = null;
+        let isAdminView = false;
+        
+        // 預設密碼 (若資料庫無設定則使用此密碼)
+        let currentAdminPassword = "admin123"; 
 
-        // Firebase 設置
-        const firebaseConfig = {
-  apiKey: "AIzaSyAmFsYszaIDv2YnJNOi0oOf0rzqEE2yx5s",
+        // Initialize Firebase
+        const initFirebase = async () => {
+            let firebaseConfig = {
+             apiKey: "AIzaSyAmFsYszaIDv2YnJNOi0oOf0rzqEE2yx5s",
   authDomain: "rules-2b444.firebaseapp.com",
   projectId: "rules-2b444",
   storageBucket: "rules-2b444.firebasestorage.app",
   messagingSenderId: "399429207355",
   appId: "1:399429207355:web:7cbbc07d8186780553631e"
-};
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-class-app';
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+            };
+            } catch (e) {
+                console.error("Firebase config parsing error", e);
+                showToast("系統設定錯誤", "error");
+                return;
+            }
 
-        // 系統狀態
-        let appState = {
-            rawData: [],
-            weeks: [],
-            currentWeek: "",
-            isAdminLoggedIn: false
-        };
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
 
-        const dom = {
-            weekSelector: document.getElementById('weekSelector'),
-            loader: document.getElementById('loader'),
-            tableContainer: document.getElementById('tableContainer'),
-            tableBody: document.getElementById('tableBody'),
-            behaviorContainer: document.getElementById('behaviorContainer'),
-            noResults: document.getElementById('noResults'),
-            
-            btnOpenAdmin: document.getElementById('btnOpenAdmin'),
-            btnCloseAdmin: document.getElementById('btnCloseAdmin'),
-            adminModal: document.getElementById('adminModal'),
-            adminLoginView: document.getElementById('adminLoginView'),
-            adminDashboardView: document.getElementById('adminDashboardView'),
-            adminPwd: document.getElementById('adminPwd'),
-            btnLogin: document.getElementById('btnLogin'),
-            adminMessage: document.getElementById('adminMessage'),
-            
-            importWeekName: document.getElementById('importWeekName'),
-            csvFileInput: document.getElementById('csvFileInput'),
-            btnImport: document.getElementById('btnImport'),
-            deleteWeekSelector: document.getElementById('deleteWeekSelector'),
-            btnDelete: document.getElementById('btnDelete')
-        };
-
-        // ==========================================
-        // 1. Firebase 驗證與資料讀取
-        // ==========================================
-        const initAuth = async () => {
+            // Auth Rules Mandatory Priority
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
@@ -275,349 +245,384 @@
                     await signInAnonymously(auth);
                 }
             } catch (error) {
-                console.error("Auth Error:", error);
+                console.error("Authentication failed:", error);
+                showToast("登入失敗，請重新整理頁面", "error");
+            }
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    setupRealtimeListener();
+                    setupSettingsListener();
+                } else {
+                    currentUser = null;
+                    if(unsubscribeSnapshot) unsubscribeSnapshot();
+                    if(unsubscribeSettings) unsubscribeSettings();
+                }
+            });
+        };
+
+        // Initialize Icons
+        lucide.createIcons();
+
+        // 設置即時資料監聽 (週次成績)
+        const setupRealtimeListener = () => {
+            if (!currentUser) return;
+            const scoresRef = collection(db, 'artifacts', appId, 'public', 'data', 'weekly_scores');
+            
+            unsubscribeSnapshot = onSnapshot(scoresRef, (snapshot) => {
+                allWeeksData = [];
+                snapshot.forEach((doc) => {
+                    allWeeksData.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // 依據建立時間排序 (新的在前)
+                allWeeksData.sort((a, b) => {
+                    const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
+                    const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
+                    return timeB - timeA;
+                });
+
+                updateStudentUI();
+                if(isAdminView) updateAdminUI();
+
+            }, (error) => {
+                console.error("Firestore Listen Error:", error);
+                showToast("讀取資料發生錯誤", "error");
+            });
+        };
+
+        // 設置設定監聽 (管理員密碼)
+        const setupSettingsListener = () => {
+            if (!currentUser) return;
+            const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'admin_config');
+            
+            unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
+                if (docSnap.exists() && docSnap.data().password) {
+                    currentAdminPassword = docSnap.data().password;
+                }
+            }, (error) => {
+                console.error("Settings Listen Error:", error);
+            });
+        };
+
+        // --- UI 更新邏輯 (學生視角) ---
+        const updateStudentUI = () => {
+            const selectEl = document.getElementById('weekSelect');
+            const currentSelection = selectEl.value;
+            
+            selectEl.innerHTML = '';
+            
+            if (allWeeksData.length === 0) {
+                selectEl.innerHTML = '<option value="">目前尚無資料</option>';
+                selectEl.disabled = true;
+                document.getElementById('contentArea').classList.add('hidden');
+                document.getElementById('noDataArea').classList.remove('hidden');
+                return;
+            }
+
+            selectEl.disabled = false;
+            document.getElementById('noDataArea').classList.add('hidden');
+            
+            // 填入選項
+            allWeeksData.forEach((week) => {
+                const option = document.createElement('option');
+                option.value = week.id;
+                option.textContent = week.weekName;
+                selectEl.appendChild(option);
+            });
+
+            // 保持選擇或選擇第一個
+            if (currentSelection && allWeeksData.find(w => w.id === currentSelection)) {
+                selectEl.value = currentSelection;
+            } else {
+                selectEl.selectedIndex = 0;
+            }
+
+            window.displaySelectedWeek(); // 觸發顯示
+        };
+
+        window.displaySelectedWeek = () => {
+            const selectEl = document.getElementById('weekSelect');
+            const weekId = selectEl.value;
+            const contentArea = document.getElementById('contentArea');
+            
+            if (!weekId) return;
+
+            const weekData = allWeeksData.find(w => w.id === weekId);
+            if (!weekData) return;
+
+            contentArea.classList.remove('hidden');
+
+            // 更新扣分說明
+            document.getElementById('deductionText').textContent = weekData.deductionInfo || "無特別扣分說明。";
+
+            // 更新表格
+            const tbody = document.getElementById('scoreTableBody');
+            tbody.innerHTML = '';
+            
+            if (weekData.students && weekData.students.length > 0) {
+                weekData.students.forEach((student, index) => {
+                    const tr = document.createElement('tr');
+                    tr.className = index % 2 === 0 ? 'table-row-even hover:bg-[#fff5f6] transition-colors' : 'table-row-odd hover:bg-[#fff5f6] transition-colors';
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-[#756264]">${student.num}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-[#5e4d4f]">${escapeHtml(student.name)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-base font-bold ${student.score < 80 ? 'text-[#cc858a]' : 'text-[#8ca891]'}">${student.score}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-[#bdaab0]">無學生資料</td></tr>`;
             }
         };
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                fetchFirestoreData();
-            }
-        });
-        initAuth();
+        // --- 管理員邏輯 ---
+        window.toggleAdminLogin = () => {
+            const modal = document.getElementById('adminLoginModal');
+            const studentView = document.getElementById('studentView');
+            const adminDashboard = document.getElementById('adminDashboard');
 
-        function fetchFirestoreData() {
-            const user = auth.currentUser;
-            if (!user) return;
-
-            const scoresRef = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
-
-            onSnapshot(scoresRef, (snapshot) => {
-                if (snapshot.empty) {
-                    appState.rawData = [];
-                    processWeeks();
-                } else {
-                    const data = [];
-                    snapshot.forEach(doc => { data.push(doc.data()); });
-                    appState.rawData = data;
-                    processWeeks();
-                }
-            }, (error) => {
-                console.error("Firestore Error: ", error);
-            });
-        }
-
-        // ==========================================
-        // 2. 畫面更新邏輯
-        // ==========================================
-        function processWeeks() {
-            const weeksSet = new Set(appState.rawData.map(item => item.week));
-            appState.weeks = Array.from(weeksSet).sort().reverse(); 
-            
-            dom.weekSelector.innerHTML = '';
-            dom.deleteWeekSelector.innerHTML = '<option value="">請選擇要刪除的週次</option>';
-
-            if (appState.weeks.length === 0) {
-                dom.weekSelector.innerHTML = '<option value="">尚無資料</option>';
-                appState.currentWeek = "";
+            if (isAdminView) {
+                // 登出或關閉儀表板
+                isAdminView = false;
+                adminDashboard.classList.add('hidden');
+                studentView.classList.remove('hidden');
+                document.getElementById('navAdminBtn').innerHTML = '<i data-lucide="settings" class="w-4 h-4"></i> 管理';
+                lucide.createIcons();
             } else {
-                appState.weeks.forEach(week => {
-                    const opt1 = document.createElement('option');
-                    opt1.value = week;
-                    opt1.textContent = week;
-                    dom.weekSelector.appendChild(opt1);
-
-                    const opt2 = document.createElement('option');
-                    opt2.value = week;
-                    opt2.textContent = week;
-                    dom.deleteWeekSelector.appendChild(opt2);
-                });
-
-                if (!appState.currentWeek || !appState.weeks.includes(appState.currentWeek)) {
-                    appState.currentWeek = appState.weeks[0];
-                }
-                dom.weekSelector.value = appState.currentWeek;
+                // 顯示登入框
+                modal.classList.toggle('hidden');
+                document.getElementById('adminPassword').value = '';
+                document.getElementById('adminPassword').focus();
             }
+        };
 
-            dom.loader.classList.add('hidden');
-            renderCurrentWeek();
-        }
-
-        function renderCurrentWeek() {
-            if (!appState.currentWeek) {
-                drawTable([]);
-                return;
-            }
-            let displayData = appState.rawData.filter(item => item.week === appState.currentWeek);
-            displayData.sort((a, b) => parseInt(a.seatNo) - parseInt(b.seatNo));
-            drawTable(displayData);
-        }
-
-        function drawTable(dataArray) {
-            dom.tableBody.innerHTML = '';
-            if (dataArray.length === 0) {
-                dom.tableContainer.classList.add('hidden');
-                dom.behaviorContainer.classList.add('hidden');
-                dom.noResults.classList.remove('hidden');
-                return;
+        window.loginAdmin = () => {
+            const pwd = document.getElementById('adminPassword').value;
+            if (pwd === currentAdminPassword) {
+                isAdminView = true;
+                document.getElementById('adminLoginModal').classList.add('hidden');
+                document.getElementById('studentView').classList.add('hidden');
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                document.getElementById('navAdminBtn').innerHTML = '<i data-lucide="arrow-left" class="w-4 h-4"></i> 返回';
+                lucide.createIcons();
+                updateAdminUI();
+                showToast("登入成功，歡迎回來", "success");
             } else {
-                dom.tableContainer.classList.remove('hidden');
-                dom.noResults.classList.add('hidden');
+                showToast("密碼錯誤，請重試", "error");
             }
+        };
 
-            // 1. 繪製精簡的三欄主表格
-            dataArray.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-[#F9F8F6] transition duration-200';
-                
-                const isWarning = parseInt(row.score) < 70;
-                
-                const tdSeat = document.createElement('td');
-                tdSeat.className = 'py-3 sm:py-4 px-3 sm:px-4 text-center font-medium text-[#A5A58D] whitespace-nowrap';
-                tdSeat.textContent = row.seatNo;
-                
-                const tdName = document.createElement('td');
-                tdName.className = 'py-3 sm:py-4 px-3 sm:px-4 font-bold text-[#3E3A39] text-sm sm:text-base font-serif-tc tracking-widest w-full whitespace-nowrap';
-                tdName.textContent = row.name;
+        window.logoutAdmin = () => {
+            window.toggleAdminLogin();
+            showToast("已安全登出", "info");
+        };
 
-                const tdScore = document.createElement('td');
-                tdScore.className = `py-3 sm:py-4 px-3 sm:px-4 text-center font-bold text-lg sm:text-xl whitespace-nowrap ${isWarning ? 'text-[#9E2A2B]' : 'text-[#6B705C]'}`;
-                tdScore.innerHTML = isWarning ? `${row.score} <i class="fas fa-exclamation-circle text-xs align-top ml-0.5"></i>` : row.score;
-
-                if (isWarning) tr.classList.add('bg-[#FFF8F8]');
-
-                tr.appendChild(tdSeat);
-                tr.appendChild(tdName);
-                tr.appendChild(tdScore);
-                dom.tableBody.appendChild(tr);
-            });
-
-            // 2. 呼叫繪製底部的行為紀錄
-            renderBehaviors(dataArray);
-        }
-
-        function renderBehaviors(dataArray) {
-            const container = dom.behaviorContainer;
-            container.innerHTML = '';
-            
-            container.classList.remove('hidden');
-
-            // 區塊標題
-            const title = document.createElement('h3');
-            title.className = 'text-base sm:text-lg font-bold text-[#3E3A39] border-b-2 border-[#D5CFC4] pb-2 mt-4 font-serif-tc flex items-center gap-2';
-            title.innerHTML = '<i class="fas fa-exclamation-triangle text-[#9E2A2B]"></i> 扣分狀況說明';
-            container.appendChild(title);
-
-            // 【完全精簡】只抓取匯入資料中「備註欄」(row.remark) 有內容的學生
-            const studentsWithRemarks = dataArray.filter(row => 
-                (row.remark && row.remark.trim() !== '')
-            );
-
-            // 如果全班都沒有人在備註欄被註記
-            if (studentsWithRemarks.length === 0) {
-                const emptyMsg = document.createElement('div');
-                emptyMsg.className = 'bg-[#FDF8F5] p-4 rounded-sm border border-[#F5E6DF] text-[#6B705C] text-center text-sm sm:text-base mt-3 font-medium shadow-sm';
-                emptyMsg.innerHTML = '<i class="fas fa-check-circle text-[#A5A58D] mr-1"></i> 本週全班無扣分說明紀錄！';
-                container.appendChild(emptyMsg);
+        window.changeAdminPassword = async () => {
+            const newPwd = document.getElementById('newAdminPassword').value.trim();
+            if (!newPwd) {
+                showToast("請輸入新密碼", "error");
                 return;
             }
-
-            // 簡單列表容器
-            const list = document.createElement('ul');
-            list.className = 'flex flex-col gap-2 mt-3';
-            
-            studentsWithRemarks.forEach(row => {
-                const li = document.createElement('li');
-                li.className = 'bg-white p-3 sm:p-4 rounded-sm shadow-sm border border-[#D5CFC4] flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4';
-                
-                // 直接將備註欄的文字呈現在這裡
-                let contentHtml = `
-                    <div class="flex items-center gap-2 sm:w-32 flex-shrink-0">
-                        <span class="bg-[#3E3A39] text-[#F4F1EA] rounded-full h-6 w-6 flex items-center justify-center font-bold text-xs shadow-sm">${row.seatNo}</span>
-                        <span class="font-bold text-[#3E3A39] text-sm sm:text-base font-serif-tc tracking-widest">${row.name}</span>
-                    </div>
-                    <div class="text-xs sm:text-sm text-[#9E2A2B] leading-relaxed flex-grow font-medium flex flex-wrap items-center">
-                        ${row.remark.replace(/\n/g, '<br>')}
-                    </div>
-                `;
-                
-                li.innerHTML = contentHtml;
-                list.appendChild(li);
-            });
-
-            container.appendChild(list);
-        }
-
-        dom.weekSelector.addEventListener('change', (e) => {
-            appState.currentWeek = e.target.value;
-            renderCurrentWeek();
-        });
-
-        // ==========================================
-        // 3. 管理員功能與 CSV 解析
-        // ==========================================
-        
-        dom.btnOpenAdmin.addEventListener('click', () => {
-            dom.adminModal.classList.remove('hidden');
-            hideAdminMessage();
-            if (appState.isAdminLoggedIn) {
-                showAdminDashboard();
-            } else {
-                dom.adminLoginView.classList.remove('hidden');
-                dom.adminDashboardView.classList.add('hidden');
-                dom.adminPwd.value = '';
-            }
-        });
-
-        dom.btnCloseAdmin.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
-
-        dom.btnLogin.addEventListener('click', () => {
-            const pwd = dom.adminPwd.value;
-            if (pwd === 'admin') { 
-                appState.isAdminLoggedIn = true;
-                showAdminDashboard();
-                showAdminMessage("登入成功！", "success");
-            } else {
-                showAdminMessage("密碼錯誤，請重新輸入。", "error");
-            }
-        });
-
-        function showAdminDashboard() {
-            dom.adminLoginView.classList.add('hidden');
-            dom.adminDashboardView.classList.remove('hidden');
-        }
-
-        function showAdminMessage(text, type) {
-            dom.adminMessage.textContent = text;
-            dom.adminMessage.className = `mb-4 p-2 sm:p-3 rounded-sm text-xs sm:text-sm font-bold text-center block ${
-                type === 'success' ? 'bg-[#FDF8F5] text-[#CB997E] border border-[#CB997E]' : 'bg-[#FFF8F8] text-[#9E2A2B] border border-[#9E2A2B]'
-            }`;
-        }
-        function hideAdminMessage() { dom.adminMessage.classList.add('hidden'); }
-
-        function parseCSV(text) {
-            let result = [];
-            let row = [];
-            let inQuotes = false;
-            let currentStr = '';
-            for (let i = 0; i < text.length; i++) {
-                let c = text[i];
-                if (c === '"') {
-                    if (inQuotes && text[i+1] === '"') { currentStr += '"'; i++; } 
-                    else { inQuotes = !inQuotes; }
-                } else if (c === ',' && !inQuotes) {
-                    row.push(currentStr); currentStr = '';
-                } else if (c === '\n' && !inQuotes) {
-                    row.push(currentStr); result.push(row); row = []; currentStr = '';
-                } else if (c === '\r' && !inQuotes) { continue; } 
-                else { currentStr += c; }
-            }
-            if (currentStr || row.length > 0) { row.push(currentStr); result.push(row); }
-            return result;
-        }
-
-        dom.btnImport.addEventListener('click', async () => {
-            const file = dom.csvFileInput.files[0];
-            const customWeekName = dom.importWeekName.value.trim();
-
-            if (!file) {
-                showAdminMessage("請先選擇要上傳的 .csv 檔案。", "error");
-                return;
-            }
-
-            dom.btnImport.disabled = true;
-            dom.btnImport.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 處理中...';
-
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                try {
-                    const text = event.target.result;
-                    const rows = parseCSV(text);
-                    if (rows.length < 3) throw new Error("檔案格式不符或資料空白");
-
-                    const titleRow = rows[0].join('');
-                    const weekMatch = titleRow.match(/第[0-9]+週/);
-                    
-                    const weekName = customWeekName || (weekMatch ? weekMatch[0] : `自訂_${new Date().getTime()}`);
-
-                    const headers = rows[1];
-                    const dataToUpload = [];
-
-                    for (let i = 2; i < rows.length; i++) {
-                        const row = rows[i];
-                        if (!row[0] || isNaN(parseInt(row[0]))) continue; 
-
-                        const seatNo = row[0].trim();
-                        const name = row[1] ? row[1].trim() : '';
-                        const score = row[2] ? row[2].trim() : '';
-                        
-                        // 【優化抓取最後一欄】使用 headers 的長度精準定位最後一欄(備註)
-                        const remarkIndex = headers.length - 1;
-                        const remark = row[remarkIndex] ? row[remarkIndex].trim() : ''; 
-                        
-                        dataToUpload.push({
-                            week: weekName,
-                            seatNo: parseInt(seatNo),
-                            name: name,
-                            score: score,
-                            remark: remark
-                        });
-                    }
-
-                    if (!auth.currentUser) throw new Error("未授權連線資料庫");
-                    const scoresRef = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
-                    
-                    for (let item of dataToUpload) {
-                        const docId = `${item.week}_${item.seatNo}`;
-                        await setDoc(doc(scoresRef, docId), item);
-                    }
-
-                    showAdminMessage(`✅ 成功匯入「${weekName}」，共 ${dataToUpload.length} 筆資料！`, "success");
-                    dom.csvFileInput.value = ''; 
-                    dom.importWeekName.value = ''; 
-
-                } catch (err) {
-                    console.error(err);
-                    showAdminMessage(`匯入失敗：${err.message}`, "error");
-                } finally {
-                    dom.btnImport.disabled = false;
-                    dom.btnImport.innerHTML = '<i class="fas fa-upload"></i> 上傳並解析寫入';
-                }
-            };
-            reader.readAsText(file); 
-        });
-
-        dom.btnDelete.addEventListener('click', async () => {
-            const targetWeek = dom.deleteWeekSelector.value;
-            if (!targetWeek) {
-                showAdminMessage("請選擇要刪除的週次", "error");
-                return;
-            }
-
-            dom.btnDelete.disabled = true;
-            dom.btnDelete.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            if (!currentUser) return;
 
             try {
-                const docsToDelete = appState.rawData.filter(d => d.week === targetWeek);
-                if (docsToDelete.length === 0) throw new Error("找不到該週資料");
-
-                for (let d of docsToDelete) {
-                    const docId = `${d.week}_${d.seatNo}`;
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'scores', docId));
-                }
-
-                showAdminMessage(`🗑️ 已成功刪除「${targetWeek}」的所有紀錄！`, "success");
-                
-                if (appState.currentWeek === targetWeek) {
-                    appState.currentWeek = "";
-                }
-            } catch (err) {
-                showAdminMessage(`刪除失敗：${err.message}`, "error");
-            } finally {
-                dom.btnDelete.disabled = false;
-                dom.btnDelete.innerHTML = '執行刪除';
+                const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'admin_config');
+                // 透過 setDoc 寫入，啟用 merge: true 確保若有其他設定不會被覆寫
+                await setDoc(settingsRef, { password: newPwd }, { merge: true });
+                showToast("密碼已成功更新！", "success");
+                document.getElementById('newAdminPassword').value = '';
+            } catch (error) {
+                console.error("Update Password Error", error);
+                showToast("更新密碼失敗", "error");
             }
-        });
+        };
+
+        const updateAdminUI = () => {
+            const tbody = document.getElementById('adminWeeksTableBody');
+            const noData = document.getElementById('adminNoData');
+            tbody.innerHTML = '';
+
+            if (allWeeksData.length === 0) {
+                noData.classList.remove('hidden');
+                return;
+            }
+
+            noData.classList.add('hidden');
+            allWeeksData.forEach((week) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-[#fff5f6] transition-colors';
+                const dateStr = week.createdAt ? new Date(week.createdAt.toMillis()).toLocaleString('zh-TW') : '未知時間';
+                
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-[#5e4d4f]">${escapeHtml(week.weekName)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-[#8f7b7d]">${dateStr}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="deleteWeek('${week.id}', '${escapeHtml(week.weekName)}')" class="text-[#cc858a] hover:text-white transition-colors bg-[#fcf0f2] hover:bg-[#cc858a] px-3 py-1.5 rounded-lg border border-[#f0e1e3] shadow-sm">
+                            <i data-lucide="trash-2" class="w-4 h-4 inline-block mr-1"></i>刪除
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons({root: tbody});
+        };
+
+        // --- CSV 解析與匯入 ---
+        window.handleImport = () => {
+            const nameInput = document.getElementById('importWeekName').value.trim();
+            const fileInput = document.getElementById('importFile');
+            const btn = document.getElementById('importBtn');
+
+            if (!nameInput) {
+                showToast("請輸入週次名稱", "error");
+                return;
+            }
+            if (fileInput.files.length === 0) {
+                showToast("請選擇 CSV 檔案", "error");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 處理中...';
+            lucide.createIcons();
+
+            // 處理台灣常見的 Big5 編碼問題
+            reader.readAsText(file, 'big5'); 
+            
+            reader.onload = async (e) => {
+                try {
+                    const text = e.target.result;
+                    const parsedData = parseCSV(text);
+
+                    if (parsedData.students.length === 0) {
+                        throw new Error("無法解析學生分數，請確認檔案格式是否正確。");
+                    }
+
+                    await saveToFirebase(nameInput, parsedData);
+                    
+                    showToast(`成功匯入 ${parsedData.students.length} 筆學生資料！`, "success");
+                    document.getElementById('importWeekName').value = '';
+                    document.getElementById('importFile').value = '';
+                } catch (error) {
+                    console.error("Import Error:", error);
+                    showToast(error.message || "匯入失敗，請檢查檔案格式", "error");
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-lucide="upload-cloud" class="w-5 h-5"></i> 開始匯入';
+                    lucide.createIcons();
+                }
+            };
+
+            reader.onerror = () => {
+                showToast("讀取檔案時發生錯誤", "error");
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="upload-cloud" class="w-5 h-5"></i> 開始匯入';
+                lucide.createIcons();
+            };
+        };
+
+        const parseCSV = (csvText) => {
+            const lines = csvText.split(/\r?\n/);
+            const students = [];
+            let deductionInfo = "";
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (!line.trim()) continue;
+                
+                const cols = line.split(',');
+
+                // 檢查是否為學生資料列 (第一欄是否為數字)
+                const num = parseInt(cols[0], 10);
+                if (!isNaN(num) && cols[1] && cols[2]) {
+                    students.push({
+                        num: num,
+                        name: cols[1].trim(),
+                        score: parseInt(cols[2], 10) || 0
+                    });
+                } 
+                // 檢查是否為扣分說明列
+                else if (cols[0] && cols[0].trim() === '扣分說明') {
+                    let info = cols.slice(1).join(',').trim();
+                    info = info.replace(/,+$/, '').trim(); // 移除結尾多餘的逗號
+                    deductionInfo = info;
+                }
+            }
+
+            students.sort((a, b) => a.num - b.num);
+            return { students, deductionInfo };
+        };
+
+        const saveToFirebase = async (weekName, data) => {
+            if (!currentUser) throw new Error("未授權連線");
+            
+            const docId = `week_${Date.now()}`;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'weekly_scores', docId);
+            
+            await setDoc(docRef, {
+                weekName: weekName,
+                students: data.students,
+                deductionInfo: data.deductionInfo,
+                createdAt: serverTimestamp()
+            });
+        };
+
+        window.deleteWeek = async (docId, weekName) => {
+            const confirmDelete = window.confirm(`確定要刪除「${weekName}」的資料嗎？\n此動作無法復原。`);
+            if(!confirmDelete) return;
+
+            if (!currentUser) return;
+
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'weekly_scores', docId);
+                await deleteDoc(docRef);
+                showToast("資料已成功刪除", "success");
+            } catch (error) {
+                console.error("Delete Error:", error);
+                showToast("刪除失敗", "error");
+            }
+        };
+
+        // --- 工具函數 ---
+        const escapeHtml = (unsafe) => {
+            return (unsafe||"").toString()
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        const showToast = (message, type = "info") => {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let bgColor = "bg-[#756264]";
+            let icon = "info";
+            if (type === "success") { bgColor = "bg-[#8ca891]"; icon = "check-circle"; } // 抹茶綠
+            if (type === "error") { bgColor = "bg-[#cc858a]"; icon = "alert-circle"; }   // 警告粉
+
+            toast.className = `${bgColor} text-white font-bold px-5 py-3.5 rounded-xl shadow-lg flex items-center gap-3 toast-enter border border-[#fffafb]/20`;
+            toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i><span>${escapeHtml(message)}</span>`;
+            
+            container.appendChild(toast);
+            lucide.createIcons({root: toast});
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = 'all 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+
+        // 啟動應用
+        window.addEventListener('DOMContentLoaded', initFirebase);
 
     </script>
 </body>
