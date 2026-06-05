@@ -340,8 +340,7 @@
         const initFirebase = async () => {
             let firebaseConfig;
             try {
-                if (typeof __firebase_config !== 'undefined') {
-                  const firebaseConfig = {
+              const firebaseConfig = {
   apiKey: "AIzaSyAFerL3UPvvzTfaDWgPNXnSrt0868filfo",
   authDomain: "rules-76007.firebaseapp.com",
   projectId: "rules-76007",
@@ -350,9 +349,6 @@
   appId: "1:689515004432:web:082a34aedb9eafc8c00095"
 };
 
-                } else {
-                    firebaseConfig = { projectId: "mock-project" };
-                }
                 
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
